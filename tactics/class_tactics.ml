@@ -88,6 +88,10 @@ let get_typeclasses_verbose () =
 let set_typeclasses_depth d = (:=) typeclasses_depth d
 let get_typeclasses_depth () = !typeclasses_depth
 
+let typeclasses_caching = ref false
+let set_typeclasses_caching d = (:=) typeclasses_caching d
+let get_typeclasses_caching () = !typeclasses_caching
+
 open Goptions
 
 let _ =
@@ -170,6 +174,14 @@ let set_typeclasses_depth =
       optkey   = ["Typeclasses";"Depth"];
       optread  = get_typeclasses_depth;
       optwrite = set_typeclasses_depth; }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "cache typeclass resolution results";
+      optkey   = ["Typeclasses";"Caching"];
+      optread  = get_typeclasses_caching;
+      optwrite = set_typeclasses_caching; }
 
 type search_strategy = Dfs | Bfs
 
