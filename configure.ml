@@ -415,7 +415,7 @@ let coq_debug_flag = if !Prefs.debug then "-g" else ""
 let coq_profile_flag = if !Prefs.profile then "-p" else ""
 let coq_annotate_flag =
   if !Prefs.annotate
-  then if program_in_path "ocamlmerlin" then "-bin-annot" else "-annot"
+  then if program_in_path "ocamlmerlin" then "-bin-annot -annot" else "-annot"
   else ""
 
 (* This variable can be overriden only for debug purposes, use with
