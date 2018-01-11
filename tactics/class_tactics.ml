@@ -981,6 +981,7 @@ module V85 = struct
 
 end
 
+
 (** 8.6 resolution *)
 module Search = struct
   type autoinfo =
@@ -990,6 +991,23 @@ module Search = struct
       search_only_classes : bool;
       search_cut : hints_path;
       search_hints : hint_db; }
+
+  module TypeclassCacheEntry : Set.OrderedType = struct
+    type t =
+      { gl: Goal.goal;
+        evars: Evd.evar_map;
+        hints: Hints.hint_db list ;
+        info: autoinfo }
+
+    let compare a b =
+      if Goal.V82.same_goal b.evars a.gl a.evars b.gl then 0
+      else 1 (* TODO *)
+  end
+
+  module TypeclassCache = Set.Make(TypeclassCacheEntry)
+
+  let typeclass_cache = Summary.ref ~name:"typeclass_cache"
+                                    TypeclassCache.empty
 
   (** Local hints *)
   let autogoal_cache = Summary.ref ~name:"autogoal_cache"
