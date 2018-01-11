@@ -814,15 +814,16 @@ module V85 = struct
              in
              sk glsv fk')
       | [] ->
-         if foundone == None && !typeclasses_debug > 0 then
-           Feedback.msg_debug
-             (pr_depth info.auto_depth ++ str": no match for " ++
-                Printer.pr_econstr_env (Goal.V82.env s gl) s concl ++
-                spc () ++ str ", " ++ int (List.length poss) ++
-                str" possibilities");
          match foundone with
          | Some e -> fk e
-         | None -> fk NotApplicable
+         | None ->
+            if !typeclasses_debug > 0 then
+              Feedback.msg_debug
+                (pr_depth info.auto_depth ++ str": no match for " ++
+                   Printer.pr_econstr_env (Goal.V82.env s gl) s concl ++
+                   spc () ++ str ", " ++ int (List.length poss) ++
+                   str" possibilities");
+            fk NotApplicable
     in aux 1 None poss
 
   let hints_tac hints =
