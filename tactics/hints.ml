@@ -495,6 +495,7 @@ val cut : t -> hints_path
 val unfolds : t -> Id.Set.t * Cset.t
 val fold : (global_reference option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
   t -> 'a -> 'a
+val compare: t -> t -> int
 
 end =
 struct
@@ -701,6 +702,15 @@ struct
   let unfolds db = db.hintdb_unfolds
 
   let use_dn db = db.use_dn
+
+  let compare a b =
+    let x = Pervasives.compare a.use_dn b.use_dn in
+    if x=0 then
+      (let x = Pervasives.compare a.hintdb_name b.hintdb_name in
+       if x=0 then
+         Pervasives.compare a.hintdb_map b.hintdb_map
+       else x)
+    else x
 
 end
 
