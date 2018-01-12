@@ -1,0 +1,29 @@
+== Developement notes for typeclass resolution caching ==
+
+To cache:
+1. Goal.goal
+2. Evars
+3. autoinfo
+
+=== Concerns: ===
+* If we cache all failed searches, cache search size could become quite large. To be tested in real life with simple placeholder implementation/
+
+=== Questions: ===
+* What part of Hints.hint_db use in comparison?
+
+=== Discussion with Matthieu at POPL'18: ===
+
+* Use `Progress.goal_equals` instead `Goal.V82.same_goal`
+* Use hints from autoinfo
+* Hint_db.t equality but OK to start with =
+* autoinfo: ignore depth, last_tac, search_cut
+* Do not cache failures due to hint cut.
+* `hints_tac` invokes monad
+* How to pass cache:
+  1. put cache into info
+  2. Or global mutable ref
+  3. or add ref to Logic monad
+* Talk to Arnold Spivak about passing cache.
+
+
+

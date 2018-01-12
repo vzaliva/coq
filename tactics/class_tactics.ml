@@ -984,24 +984,35 @@ end
 
 (** 8.6 resolution *)
 module Search = struct
-  type autoinfo =
-    { search_depth : int list;
-      last_tac : Pp.std_ppcmds Lazy.t;
-      search_dep : bool;
-      search_only_classes : bool;
-      search_cut : hints_path;
-      search_hints : hint_db; }
+
+  type autoinfo = { search_depth : int list;
+        last_tac : Pp.std_ppcmds Lazy.t;
+        search_dep : bool;
+        search_only_classes : bool;
+        search_cut : hints_path;
+        search_hints : hint_db; }
+
+  let cache_compare_autoinfo a b =
+    let x = Pervasives.compare a.search_dep b.search_dep in
+    if x==0 then
+      (let x = Pervasives.compare a.search_only_classes b.search_only_classes in
+       if x==0 then
+         (* TODO: comparison method for `Hint_db.t` *)
+         Pervasives.compare a.search_hints b.search_hints
+       else x)
+    else x
 
   module TypeclassCacheEntry : Set.OrderedType = struct
     type t =
       { gl: Goal.goal;
         evars: Evd.evar_map;
-        hints: Hints.hint_db list ;
         info: autoinfo }
 
     let compare a b =
-      if Goal.V82.same_goal b.evars a.gl a.evars b.gl then 0
-      else 1 (* TODO *)
+      (* TODO: use `Progress.goal_equal` instead *)
+      if Goal.V82.same_goal b.evars a.gl a.evars b.gl then
+        cache_compare_autoinfo a.info b.info
+      else Pervasives.compare a b
   end
 
   module TypeclassCache = Set.Make(TypeclassCacheEntry)
