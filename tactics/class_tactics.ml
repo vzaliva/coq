@@ -997,7 +997,6 @@ module Search = struct
     if x==0 then
       (let x = Pervasives.compare a.search_only_classes b.search_only_classes in
        if x==0 then
-         (* TODO: comparison method for `Hint_db.t` *)
          Pervasives.compare a.search_hints b.search_hints
        else x)
     else x
