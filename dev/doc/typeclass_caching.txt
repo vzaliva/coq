@@ -9,7 +9,7 @@ To cache:
 * If we cache all failed searches, cache search size could become quite large. To be tested in real life with simple placeholder implementation/
 
 === Questions: ===
-* What part of Hints.hint_db use in comparison?
+* How to integrate cache into search monads?
 
 === Discussion with Matthieu at POPL'18: ===
 
@@ -23,7 +23,7 @@ To cache:
   1. put cache into info
   2. Or global mutable ref
   3. or add ref to Logic monad
-* Talk to Arnold Spivak about passing cache.
+* Talk to Arnaud Spiwack about passing cache.
 
 
 
