@@ -704,11 +704,20 @@ struct
   let use_dn db = db.use_dn
 
   let compare a b =
-    let x = Pervasives.compare a.use_dn b.use_dn in
+    let x = Pervasives.compare a.hintdb_nopat b.hintdb_nopat in
     if x=0 then
-      (let x = Pervasives.compare a.hintdb_name b.hintdb_name in
+      (let x = Pervasives.compare a.hintdb_unfolds b.hintdb_unfolds in
        if x=0 then
-         Pervasives.compare a.hintdb_map b.hintdb_map
+         (let x = Pervasives.compare a.hintdb_cut b.hintdb_cut in
+          if x=0 then
+            (let x = Pervasives.compare a.use_dn b.use_dn in
+             if x=0 then
+               (let x = Pervasives.compare a.hintdb_name b.hintdb_name in
+                if x=0 then
+                  Pervasives.compare a.hintdb_map b.hintdb_map
+                else x)
+             else x)
+          else x)
        else x)
     else x
 
