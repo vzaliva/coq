@@ -393,6 +393,11 @@ val tclTIMEOUT : int -> 'a tactic -> 'a tactic
     identifying annotation if present *)
 val tclTIME : string option -> 'a tactic -> 'a tactic
 
+module Progress : sig
+  (** Equality function on goals *)
+  val goal_equal: Evd.evar_map -> Evd.evar -> Evd.evar_map -> Evd.evar -> bool
+end
+
 (** {7 Unsafe primitives} *)
 
 (** The primitives in the [Unsafe] module should be avoided as much as

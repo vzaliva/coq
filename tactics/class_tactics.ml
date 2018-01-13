@@ -1008,8 +1008,7 @@ module Search = struct
         info: autoinfo }
 
     let compare a b =
-      (* TODO: use `Progress.goal_equal` instead *)
-      if Goal.V82.same_goal b.evars a.gl a.evars b.gl then
+      if Proofview.Progress.goal_equal b.evars a.gl a.evars b.gl then
         cache_compare_autoinfo a.info b.info
       else Pervasives.compare a b
   end
