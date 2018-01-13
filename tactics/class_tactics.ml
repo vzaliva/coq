@@ -1248,6 +1248,9 @@ module Search = struct
                 Printer.pr_econstr_env (Goal.env gl) sigma concl ++
                 str ", " ++ int (List.length poss) ++
                 str" possibilities");
+         tclLIFT (
+             NonLogical.make (fun () -> typeclass_cache := !typeclass_cache))
+         >>= fun () ->
          match e with
          | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
          | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableEx
