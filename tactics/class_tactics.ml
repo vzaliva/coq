@@ -992,14 +992,13 @@ module Search = struct
         search_cut : hints_path;
         search_hints : hint_db; }
 
-  let cache_compare_autoinfo a b =
-    let x = Pervasives.compare a.search_dep b.search_dep in
-    if x==0 then
-      (let x = Pervasives.compare a.search_only_classes b.search_only_classes in
-       if x==0 then
-         Pervasives.compare a.search_hints b.search_hints
-       else x)
-    else x
+  (** This is caching-specific compare, not geneal-purpose *)
+  let compare a b =
+    let (>>==) f c = if f = 0 then 0 else Lazy.force c in
+    let open Pervasives in
+    compare a.search_dep b.search_dep >>==
+      lazy (compare a.search_only_classes b.search_only_classes) >>==
+      lazy (compare a.search_hints b.search_hints)
 
   module TypeclassCacheEntry : Set.OrderedType = struct
     type t =
@@ -1009,7 +1008,7 @@ module Search = struct
 
     let compare a b =
       if Proofview.Progress.goal_equal b.evars a.gl a.evars b.gl then
-        cache_compare_autoinfo a.info b.info
+        compare a.info b.info
       else Pervasives.compare a b
   end
 
