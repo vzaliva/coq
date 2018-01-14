@@ -8,9 +8,6 @@ To cache:
 === Concerns: ===
 * If we cache all failed searches, cache search size could become quite large. To be tested in real life with simple placeholder implementation/
 
-=== Questions: ===
-* How to integrate cache into search monads?
-
 === Discussion with Matthieu at POPL'18: ===
 
 * Use `Progress.goal_equals` instead `Goal.V82.same_goal`
@@ -20,10 +17,8 @@ To cache:
 * Do not cache failures due to hint cut.
 * `hints_tac` invokes monad
 * How to pass cache:
-  1. put cache into info
-  2. Or global mutable ref
-  3. or add ref to Logic monad
-* Talk to Arnaud Spiwack about passing cache.
+  1. put cache into autoinfo (need to modify for it to fold (return back)
+  2. Or global mutable ref (access via NonLogical monad)
 
 
 
