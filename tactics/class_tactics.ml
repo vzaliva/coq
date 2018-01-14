@@ -1000,19 +1000,22 @@ module Search = struct
       lazy (compare a.search_only_classes b.search_only_classes) >>==
       lazy (compare a.search_hints b.search_hints)
 
-  module TypeclassCacheEntry : Set.OrderedType = struct
-    type t =
-      { gl: Goal.goal;
-        evars: Evd.evar_map;
-        info: autoinfo }
+  type tc_cache_entry =
+      { tc_cache_gl: Goal.goal;
+        tc_cache_evars: Evd.evar_map;
+        tc_cache_info: autoinfo }
 
-    let compare a b =
-      if Proofview.Progress.goal_equal b.evars a.gl a.evars b.gl then
-        compare a.info b.info
-      else Pervasives.compare a b
-  end
+  let tc_cache_entry_cmp a b =
+    if Proofview.Progress.goal_equal
+         b.tc_cache_evars a.tc_cache_gl
+         a.tc_cache_evars b.tc_cache_gl
+    then compare a.tc_cache_info b.tc_cache_info
+    else Pervasives.compare a b
 
-  module TypeclassCache = Set.Make(TypeclassCacheEntry)
+  module TypeclassCache = Set.Make(struct
+                              type t = tc_cache_entry
+                              let compare = tc_cache_entry_cmp
+                            end)
 
   let typeclass_cache = Summary.ref ~name:"typeclass_cache"
                                     TypeclassCache.empty
