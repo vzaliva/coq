@@ -1,4 +1,4 @@
-== Developement notes for typeclass resolution caching ==
+== Development notes for typeclass resolution caching ==
 
 To cache:
 1. Goal.t
@@ -23,6 +23,10 @@ To cache:
 === Discussion with Arnaud Spiwack at POPL'18: ===
 * Use tclLIFT/NonLogical to isolate I/O (cache access)
 
+=== TODO ===
+* Persistently save and load the cache
+* Do not cache failures due to hint cut.
+* Debug command to examine the cache?
 
 
 
