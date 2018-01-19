@@ -1,7 +1,7 @@
 == Developement notes for typeclass resolution caching ==
 
 To cache:
-1. Goal.goal
+1. Goal.t
 2. Evars
 3. autoinfo
 
@@ -19,6 +19,13 @@ To cache:
 * How to pass cache:
   1. put cache into autoinfo (need to modify for it to fold (return back)
   2. Or global mutable ref (access via NonLogical monad)
+
+=== Discussion with Arnaud Spiwack at POPL'18: ===
+* Use tclLIFT/NonLogical to isolate I/O (cache access)
+
+
+
+
 
 
 

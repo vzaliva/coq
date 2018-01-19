@@ -1001,14 +1001,21 @@ module Search = struct
       lazy (compare a.search_hints b.search_hints)
 
   type tc_cache_entry =
-      { tc_cache_gl: Goal.goal;
-        tc_cache_evars: Evd.evar_map;
-        tc_cache_info: autoinfo }
+    {
+      (* the following 3 fields are unpacked Goal.t *)
+      tc_cache_goal_env : Environ.env;
+      tc_cache_goal_sigma : Evd.evar_map;
+      tc_cache_goal_concl : EConstr.constr ;
+
+      tc_cache_evars: Evd.evar_map;
+      tc_cache_info: autoinfo }
 
   let tc_cache_entry_cmp a b =
-    if Proofview.Progress.goal_equal
-         b.tc_cache_evars a.tc_cache_gl
-         a.tc_cache_evars b.tc_cache_gl
+    let sigma1 = a.tc_cache_goal_sigma in
+    let sigma2 = b.tc_cache_goal_sigma in
+    let c1 = EConstr.to_constr a.tc_cache_evars a.tc_cache_goal_concl in
+    let c2 = EConstr.to_constr b.tc_cache_evars b.tc_cache_goal_concl in
+    if Evarutil.eq_constr_univs_test sigma1 sigma2 c1 c2
     then compare a.tc_cache_info b.tc_cache_info
     else Pervasives.compare a b
 
@@ -1251,8 +1258,21 @@ module Search = struct
                 Printer.pr_econstr_env (Goal.env gl) sigma concl ++
                 str ", " ++ int (List.length poss) ++
                 str" possibilities");
+         tclEVARMAP >>= fun sigma' ->
          tclLIFT (
-             NonLogical.make (fun () -> typeclass_cache := !typeclass_cache))
+             NonLogical.make (fun () ->
+                 if get_typeclasses_caching () then
+                   typeclass_cache :=
+                     TypeclassCache.add
+                       {
+                         tc_cache_goal_env   = Goal.env gl   ;
+                         tc_cache_goal_sigma = Goal.sigma gl ;
+                         tc_cache_goal_concl = Goal.concl gl ;
+                         tc_cache_evars      = sigma'        ;
+                         tc_cache_info       = info
+                       }
+                       !typeclass_cache
+           ))
          >>= fun () ->
          match e with
          | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
