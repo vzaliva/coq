@@ -1112,12 +1112,32 @@ module Search = struct
     let sigma = Goal.sigma gl in
     let unique = not info.search_dep || is_unique env sigma concl in
     let backtrack = needs_backtrack env sigma unique concl in
-    if !typeclasses_debug > 0 then
-      Feedback.msg_debug
-        (pr_depth info.search_depth ++ str": looking for " ++
-           Printer.pr_econstr_env (Goal.env gl) sigma concl ++
-           (if backtrack then str" with backtracking"
-            else str" without backtracking"));
+
+    if !typeclasses_caching &&
+         TypeclassCache.exists
+           (fun x -> tc_cache_entry_cmp
+                       {
+                         tc_cache_goal_env   = env   ;
+                         tc_cache_goal_sigma = sigma ;
+                         tc_cache_goal_concl = concl ;
+                         tc_cache_evars      = sigma ;
+                         tc_cache_info       = info
+                       } x = 0) !typeclass_cache
+    then
+      if !typeclasses_debug > 0 then
+        Feedback.msg_debug
+          (pr_depth info.search_depth ++ str": Cache hit for " ++
+             Printer.pr_econstr_env (Goal.env gl) sigma concl ++
+             (if backtrack then str" with backtracking"
+              else str" without backtracking"))
+      else
+        if !typeclasses_debug > 0 then
+          Feedback.msg_debug
+            (pr_depth info.search_depth ++ str": looking for " ++
+               Printer.pr_econstr_env (Goal.env gl) sigma concl ++
+               (if backtrack then str" with backtracking"
+                else str" without backtracking"))
+    ;
     let secvars = compute_secvars gl in
     let poss =
       e_possible_resolve hints info.search_hints secvars info.search_only_classes sigma concl in
@@ -1261,7 +1281,7 @@ module Search = struct
          tclEVARMAP >>= fun sigma' ->
          tclLIFT (
              NonLogical.make (fun () ->
-                 if get_typeclasses_caching () then
+                 if !typeclasses_caching then
                    typeclass_cache :=
                      TypeclassCache.add
                        {
