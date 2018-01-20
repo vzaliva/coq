@@ -1284,6 +1284,7 @@ module Search = struct
              tclEVARMAP >>= fun sigma' ->
              tclLIFT (
                  NonLogical.make (fun () ->
+                     let oldsize = TypeclassCache.cardinal !typeclass_cache in
                      if !typeclasses_caching then
                        typeclass_cache :=
                          TypeclassCache.add
@@ -1294,7 +1295,12 @@ module Search = struct
                              tc_cache_evars      = sigma'        ;
                              tc_cache_info       = info
                            }
-                           !typeclass_cache
+                           !typeclass_cache ;
+                     let newsize = TypeclassCache.cardinal !typeclass_cache in
+                     if newsize != oldsize && !typeclasses_debug > 0 then
+                       Feedback.msg_debug
+                         (pr_depth info.search_depth ++ str": Cache size " ++
+                            int (newsize));
                ))
              >>= fun () ->
              match e with
