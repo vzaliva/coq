@@ -1131,7 +1131,7 @@ module Search = struct
                Printer.pr_econstr_env (Goal.env gl) sigma concl ++
                (if backtrack then str" with backtracking"
                 else str" without backtracking"));
-        Tacticals.New.tclFAIL 0 (str"Cached failed typeclass search")
+        Proofview.tclZERO ~info:Exninfo.null NoApplicableEx
       end
     else
       begin
