@@ -993,7 +993,7 @@ module Search = struct
         search_hints : hint_db; }
 
   (** This is caching-specific compare, not geneal-purpose *)
-  let compare a b =
+  let compare_autoinfo a b =
     let (>>==) f c = if f = 0 then 0 else Lazy.force c in
     let open Pervasives in
     compare a.search_dep b.search_dep >>==
@@ -1020,7 +1020,7 @@ module Search = struct
     let c1 = EConstr.to_constr a.tc_cache_evars a.tc_cache_goal_concl in
     let c2 = EConstr.to_constr b.tc_cache_evars b.tc_cache_goal_concl in
     if safe_eq_constr sigma1 sigma2 c1 c2
-    then compare a.tc_cache_info b.tc_cache_info
+    then compare_autoinfo a.tc_cache_info b.tc_cache_info
     else Pervasives.compare a b
 
   module TypeclassCache = Set.Make(struct
