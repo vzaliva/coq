@@ -1011,11 +1011,15 @@ module Search = struct
       tc_cache_info: autoinfo }
 
   let tc_cache_entry_cmp a b =
+    let safe_eq_constr sigma1 sigma2 c1 c2 =
+      (* TODO: Workaround for anomaly exception raised on universe mismatch *)
+      try Evarutil.eq_constr_univs_test sigma1 sigma2 c1 c2
+      with _ -> false in
     let sigma1 = a.tc_cache_goal_sigma in
     let sigma2 = b.tc_cache_goal_sigma in
     let c1 = EConstr.to_constr a.tc_cache_evars a.tc_cache_goal_concl in
     let c2 = EConstr.to_constr b.tc_cache_evars b.tc_cache_goal_concl in
-    if Evarutil.eq_constr_univs_test sigma1 sigma2 c1 c2
+    if safe_eq_constr sigma1 sigma2 c1 c2
     then compare a.tc_cache_info b.tc_cache_info
     else Pervasives.compare a b
 
