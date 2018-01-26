@@ -28,6 +28,11 @@ To cache:
 * Do not cache failures due to hint cut.
 * Debug command to examine the cache?
 
+=== Problems ===
+
+In `tc_cache_entry_cmp` call to `Evarutil.eq_constr_univs_test` causes exception: `Anomaly: Universe Foo.N undefined.` One possible problem is that `eq_constr_univs_test` defined that "The universe constraints in [sigma2] are assumed to be an extention of those in [sigma1]". In caching this is not the case. In such situation comparison should always fail without excepion.
+
+
 
 
 
