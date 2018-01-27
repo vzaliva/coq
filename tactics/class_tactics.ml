@@ -994,7 +994,7 @@ module Search = struct
 
   (** This is caching-specific compare, not geneal-purpose *)
   let compare_autoinfo a b =
-    let (>>==) f c = if f = 0 then 0 else Lazy.force c in
+    let (>>==) f c = if f != 0 then f else Lazy.force c in
     let open Pervasives in
     compare a.search_dep b.search_dep >>==
       lazy (compare a.search_only_classes b.search_only_classes) >>==
@@ -1011,17 +1011,24 @@ module Search = struct
       tc_cache_info: autoinfo }
 
   let tc_cache_entry_cmp a b =
-    let safe_eq_constr sigma1 sigma2 c1 c2 =
-      (* TODO: Workaround for anomaly exception raised on universe mismatch *)
-      try Evarutil.eq_constr_univs_test sigma1 sigma2 c1 c2
-      with _ -> false in
+    let eq_constr_cmp sigma1 sigma2 c1 c2 def =
+      assert(def!=0);
+      try if Evarutil.eq_constr_univs_test sigma1 sigma2 c1 c2 then 0 else def
+      with _ -> def in
     let sigma1 = a.tc_cache_goal_sigma in
     let sigma2 = b.tc_cache_goal_sigma in
     let c1 = EConstr.to_constr a.tc_cache_evars a.tc_cache_goal_concl in
     let c2 = EConstr.to_constr b.tc_cache_evars b.tc_cache_goal_concl in
-    if safe_eq_constr sigma1 sigma2 c1 c2
-    then compare_autoinfo a.tc_cache_info b.tc_cache_info
-    else Pervasives.compare a b
+    let (>>==) f c = if f != 0 then f else Lazy.force c in
+    let lit =
+      let open Pervasives in
+      compare a.tc_cache_goal_env b.tc_cache_goal_env >>==
+        lazy (compare a.tc_cache_goal_sigma b.tc_cache_goal_sigma) >>==
+        lazy (compare a.tc_cache_goal_concl b.tc_cache_goal_concl) >>==
+        lazy (compare a.tc_cache_evars b.tc_cache_evars)
+    in
+    if lit=0 then lit else eq_constr_cmp sigma1 sigma2 c1 c2 lit
+    >>== lazy (compare_autoinfo a.tc_cache_info b.tc_cache_info)
 
   module TypeclassCache = Set.Make(struct
                               type t = tc_cache_entry

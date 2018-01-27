@@ -704,7 +704,7 @@ struct
   let use_dn db = db.use_dn
 
   let compare a b =
-    let (>>==) f c = if f = 0 then 0 else Lazy.force c in
+    let (>>==) f c = if f != 0 then f else Lazy.force c in
     let open Pervasives in
     compare a.hintdb_nopat b.hintdb_nopat >>==
       lazy (compare a.hintdb_unfolds b.hintdb_unfolds) >>==
@@ -712,7 +712,6 @@ struct
       lazy (compare a.use_dn b.use_dn) >>==
       lazy (compare a.hintdb_name b.hintdb_name) >>==
       lazy (compare a.hintdb_map b.hintdb_map)
-
 end
 
 module Hintdbmap = String.Map
