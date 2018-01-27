@@ -1310,7 +1310,10 @@ module Search = struct
                      let newsize = TypeclassCache.cardinal !typeclass_cache in
                      if newsize != oldsize && !typeclasses_debug > 0 then
                        Feedback.msg_debug
-                         (pr_depth info.search_depth ++ str": Cache size " ++
+                         (pr_depth info.search_depth ++
+                            str": Caching" ++
+                            Printer.pr_econstr_env (Goal.env gl) (Goal.sigma gl) (Goal.concl gl) ++
+                            str". Cache size " ++
                             int (newsize));
                ))
              >>= fun () ->
