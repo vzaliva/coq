@@ -1292,40 +1292,40 @@ module Search = struct
                     Printer.pr_econstr_env (Goal.env gl) sigma concl ++
                     str ", " ++ int (List.length poss) ++
                     str" possibilities");
-             tclEVARMAP >>= fun sigma' ->
-             tclLIFT (
-                 NonLogical.make (fun () ->
-                     if !foundone == false then
-                       begin
-                         let oldsize = TypeclassCache.cardinal !typeclass_cache in
-                         if !typeclasses_caching then
-                           typeclass_cache :=
-                             TypeclassCache.add
-                               {
-                                 tc_cache_goal_env   = Goal.env gl   ;
-                                 tc_cache_goal_sigma = Goal.sigma gl ;
-                                 tc_cache_goal_concl = Goal.concl gl ;
-                                 tc_cache_evars      = sigma'        ;
-                                 tc_cache_info       = info
-                               }
-                               !typeclass_cache ;
-                         let newsize = TypeclassCache.cardinal !typeclass_cache in
-                         if newsize != oldsize && !typeclasses_debug > 0 then
-                           Feedback.msg_debug
-                           (pr_depth info.search_depth ++
-                              str": Caching" ++
-                              Printer.pr_econstr_env (Goal.env gl) (Goal.sigma gl) (Goal.concl gl) ++
-                              str". Cache size " ++
-                              int (newsize))
-                       end
-               ))
-             >>= fun () ->
              match e with
              | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
              | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableEx
         in
-        if backtrack then aux (NoApplicableEx,Exninfo.null) poss
-        else tclONCE (aux (NoApplicableEx,Exninfo.null) poss)
+        let x =
+          if backtrack then aux (NoApplicableEx,Exninfo.null) poss
+          else tclONCE (aux (NoApplicableEx,Exninfo.null) poss) in
+        tclCASE x >>=
+          function
+          | Fail (e,ei) ->
+             tclEVARMAP >>= (fun sigma' ->
+              tclLIFT (
+                  NonLogical.make (fun () ->
+                      let oldsize = TypeclassCache.cardinal !typeclass_cache in
+                      if !typeclasses_caching then
+                        typeclass_cache :=
+                          TypeclassCache.add
+                            {
+                              tc_cache_goal_env     = Goal.env gl    ;
+                              tc_cache_goal_sigma = Goal.sigma gl ;
+                              tc_cache_goal_concl  = Goal.concl gl  ;
+                              tc_cache_evars          = sigma'            ;
+                              tc_cache_info             = info
+                            } !typeclass_cache ;
+                      let newsize = TypeclassCache.cardinal !typeclass_cache in
+                      if newsize != oldsize && !typeclasses_debug > 0 then
+                        Feedback.msg_debug
+                          (pr_depth info.search_depth ++
+                             str": Caching " ++
+                             Printer.pr_econstr_env (Goal.env gl) (Goal.sigma gl) (Goal.concl gl) ++
+                             str". Cache size " ++
+                             int (newsize))
+                )) >>= fun () -> tclZERO ~info:ei e)
+          | Next (r,c) -> ortac (Proofview.tclUNIT r) c
       end
 
   let hints_tac hints info kont : unit Proofview.tactic =
