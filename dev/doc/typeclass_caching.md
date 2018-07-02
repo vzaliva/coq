@@ -37,7 +37,8 @@ To cache:
 
 # Problems #
 
-In `tc_cache_entry_cmp` call to `Evarutil.eq_constr_univs_test` causes exception: `Anomaly: Universe Foo.N undefined.` One possible problem is that `eq_constr_univs_test` defined that *"The universe constraints in [sigma2] are assumed to be an extention of those in [sigma1]"*. In caching this is not the case. In such situation comparison should always fail without excepion.
+* In `tc_cache_entry_cmp` call to `Evarutil.eq_constr_univs_test` causes exception: `Anomaly: Universe Foo.N undefined.` One possible problem is that `eq_constr_univs_test` defined that *"The universe constraints in [sigma2] are assumed to be an extention of those in [sigma1]"*. In caching this is not the case. In such situation comparison should always fail without excepion. (or use `eq_constr_nounivs`)
+* Current caching is sub-optimal in case when several tactics are tried and all of them fails.
 
 
 

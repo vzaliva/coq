@@ -1295,26 +1295,29 @@ module Search = struct
              tclEVARMAP >>= fun sigma' ->
              tclLIFT (
                  NonLogical.make (fun () ->
-                     let oldsize = TypeclassCache.cardinal !typeclass_cache in
-                     if !typeclasses_caching then
-                       typeclass_cache :=
-                         TypeclassCache.add
-                           {
-                             tc_cache_goal_env   = Goal.env gl   ;
-                             tc_cache_goal_sigma = Goal.sigma gl ;
-                             tc_cache_goal_concl = Goal.concl gl ;
-                             tc_cache_evars      = sigma'        ;
-                             tc_cache_info       = info
-                           }
-                           !typeclass_cache ;
-                     let newsize = TypeclassCache.cardinal !typeclass_cache in
-                     if newsize != oldsize && !typeclasses_debug > 0 then
-                       Feedback.msg_debug
-                         (pr_depth info.search_depth ++
-                            str": Caching" ++
-                            Printer.pr_econstr_env (Goal.env gl) (Goal.sigma gl) (Goal.concl gl) ++
-                            str". Cache size " ++
-                            int (newsize));
+                     if !foundone == false then
+                       begin
+                         let oldsize = TypeclassCache.cardinal !typeclass_cache in
+                         if !typeclasses_caching then
+                           typeclass_cache :=
+                             TypeclassCache.add
+                               {
+                                 tc_cache_goal_env   = Goal.env gl   ;
+                                 tc_cache_goal_sigma = Goal.sigma gl ;
+                                 tc_cache_goal_concl = Goal.concl gl ;
+                                 tc_cache_evars      = sigma'        ;
+                                 tc_cache_info       = info
+                               }
+                               !typeclass_cache ;
+                         let newsize = TypeclassCache.cardinal !typeclass_cache in
+                         if newsize != oldsize && !typeclasses_debug > 0 then
+                           Feedback.msg_debug
+                           (pr_depth info.search_depth ++
+                              str": Caching" ++
+                              Printer.pr_econstr_env (Goal.env gl) (Goal.sigma gl) (Goal.concl gl) ++
+                              str". Cache size " ++
+                              int (newsize))
+                       end
                ))
              >>= fun () ->
              match e with
