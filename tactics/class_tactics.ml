@@ -1008,7 +1008,8 @@ module Search = struct
       tc_cache_goal_concl : EConstr.constr ;
 
       tc_cache_evars: Evd.evar_map;
-      tc_cache_info: autoinfo }
+      tc_cache_info: autoinfo;
+      tc_cache_global_hints: hint_db list }
 
   let tc_cache_entry_cmp a b =
     let eq_constr_cmp sigma1 sigma2 c1 c2 def =
@@ -1028,7 +1029,11 @@ module Search = struct
         lazy (compare a.tc_cache_evars b.tc_cache_evars)
     in
     if lit=0 then lit else eq_constr_cmp sigma1 sigma2 c1 c2 lit
-    >>== lazy (compare_autoinfo a.tc_cache_info b.tc_cache_info)
+                           >>== lazy (compare_autoinfo a.tc_cache_info b.tc_cache_info)
+                           >>== lazy (
+                                    List.compare Hint_db.compare
+                                      a.tc_cache_global_hints b.tc_cache_global_hints
+                                  )
 
   module TypeclassCache = Set.Make(struct
                               type t = tc_cache_entry
@@ -1132,7 +1137,8 @@ module Search = struct
                          tc_cache_goal_sigma = sigma ;
                          tc_cache_goal_concl = concl ;
                          tc_cache_evars      = sigma ;
-                         tc_cache_info       = info
+                         tc_cache_info       = info ;
+                         tc_cache_global_hints = hints
                        } x = 0) !typeclass_cache
     then
       begin
@@ -1311,10 +1317,11 @@ module Search = struct
                           TypeclassCache.add
                             {
                               tc_cache_goal_env     = Goal.env gl    ;
-                              tc_cache_goal_sigma = Goal.sigma gl ;
-                              tc_cache_goal_concl  = Goal.concl gl  ;
-                              tc_cache_evars          = sigma'            ;
-                              tc_cache_info             = info
+                              tc_cache_goal_sigma  = Goal.sigma gl ;
+                              tc_cache_goal_concl   = Goal.concl gl  ;
+                              tc_cache_evars           = sigma'            ;
+                              tc_cache_info              = info                ;
+                              tc_cache_global_hints = hints ;
                             } !typeclass_cache ;
                       let newsize = TypeclassCache.cardinal !typeclass_cache in
                       if newsize != oldsize && !typeclasses_debug > 0 then

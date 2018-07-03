@@ -4,11 +4,12 @@ To cache:
 
 1. Goal.t
 2. Evars
-3. autoinfo
+3. autoinfo (includes local hints)
+3. global hints
 
 # Concerns: #
 
-* If we cache all failed searches, cache search size could become quite large. To be tested in real life with simple placeholder implementation/
+* If we cache all failed searches, cache search size could become quite large. To be tested in real life with simple placeholder implementation.
 
 # Initial discussions POPL'18 #
 
@@ -30,11 +31,15 @@ To cache:
 * Experimental implementation https://github.com/vzaliva/coq/tree/v8.7-typeclass-cache
 * Ticket https://github.com/coq/coq/issues/6213
 
+## Vadim working with Matthieu in Paris (July 2018) ##
+* comparing hint databases could be speed up by comparing just the names and respecitive `max_id` fields
+
 # TODO #
 * Persistently save and load the cache
 * Do not cache failures due to hint cut.
 * Debug command to examine the cache?
 * Add test cases for caching to testsuite/output
+* Cache entries alpha equivalence
 
 # Problems #
 
