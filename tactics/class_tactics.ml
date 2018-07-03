@@ -1305,14 +1305,14 @@ module Search = struct
         let x =
           if backtrack then aux (NoApplicableEx,Exninfo.null) poss
           else tclONCE (aux (NoApplicableEx,Exninfo.null) poss) in
-        tclCASE x >>=
-          function
-          | Fail (e,ei) ->
-             tclEVARMAP >>= (fun sigma' ->
-              tclLIFT (
-                  NonLogical.make (fun () ->
-                      let oldsize = TypeclassCache.cardinal !typeclass_cache in
-                      if !typeclasses_caching then
+        if !typeclasses_caching then
+          tclCASE x >>=
+            function
+            | Fail (e,ei) ->
+               tclEVARMAP >>= (fun sigma' ->
+                tclLIFT (
+                    NonLogical.make (fun () ->
+                        let oldsize = TypeclassCache.cardinal !typeclass_cache in
                         typeclass_cache :=
                           TypeclassCache.add
                             {
@@ -1323,16 +1323,17 @@ module Search = struct
                               tc_cache_info              = info                ;
                               tc_cache_global_hints = hints ;
                             } !typeclass_cache ;
-                      let newsize = TypeclassCache.cardinal !typeclass_cache in
-                      if newsize != oldsize && !typeclasses_debug > 0 then
-                        Feedback.msg_debug
-                          (pr_depth info.search_depth ++
-                             str": Caching " ++
-                             Printer.pr_econstr_env (Goal.env gl) (Goal.sigma gl) (Goal.concl gl) ++
-                             str". Cache size " ++
-                             int (newsize))
-                )) >>= fun () -> tclZERO ~info:ei e)
-          | Next (r,c) -> ortac (Proofview.tclUNIT r) c
+                        let newsize = TypeclassCache.cardinal !typeclass_cache in
+                        if newsize != oldsize && !typeclasses_debug > 0 then
+                          Feedback.msg_debug
+                            (pr_depth info.search_depth ++
+                               str": Caching " ++
+                               Printer.pr_econstr_env (Goal.env gl) (Goal.sigma gl) (Goal.concl gl) ++
+                               str". Cache size " ++
+                               int (newsize))
+                  )) >>= fun () -> tclZERO ~info:ei e)
+            | Next (r,c) -> ortac (Proofview.tclUNIT r) c
+        else x
       end
 
   let hints_tac hints info kont : unit Proofview.tactic =
