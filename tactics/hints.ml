@@ -666,7 +666,7 @@ struct
       match h.name with PathHints [gr] -> not (List.mem_f eq_gr gr grs) | _ -> true in
     let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
     let hintnopat = List.smartfilter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
-      { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
+    { db with hintdb_max_id = succ db.hintdb_max_id; hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
   let remove_one gr db = remove_list [gr] db
 
@@ -706,12 +706,13 @@ struct
   let compare a b =
     let (>>==) f c = if f != 0 then f else Lazy.force c in
     let open Pervasives in
-    compare a.hintdb_nopat b.hintdb_nopat >>==
+    compare a.hintdb_max_id b.hintdb_max_id >>==
+      lazy (compare a.hintdb_name b.hintdb_name) >>==
       lazy (compare a.hintdb_unfolds b.hintdb_unfolds) >>==
       lazy (compare a.hintdb_cut b.hintdb_cut) >>==
       lazy (compare a.use_dn b.use_dn) >>==
-      lazy (compare a.hintdb_name b.hintdb_name) >>==
-      lazy (compare a.hintdb_map b.hintdb_map)
+      lazy (compare a.hintdb_nopat b.hintdb_nopat)
+
 end
 
 module Hintdbmap = String.Map
