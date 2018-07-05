@@ -88,7 +88,7 @@ let get_typeclasses_verbose () =
 let set_typeclasses_depth d = (:=) typeclasses_depth d
 let get_typeclasses_depth () = !typeclasses_depth
 
-let typeclasses_caching = ref false
+let typeclasses_caching = ref true
 let set_typeclasses_caching d = (:=) typeclasses_caching d
 let get_typeclasses_caching () = !typeclasses_caching
 
@@ -1002,33 +1002,29 @@ module Search = struct
 
   type tc_cache_entry =
     {
-      (* the following 3 fields are unpacked Goal.t *)
-      tc_cache_goal_env : Environ.env;
+      (* the following 2 fields are unpacked Goal.t *)
       tc_cache_goal_sigma : Evd.evar_map;
       tc_cache_goal_concl : EConstr.constr ;
 
-      tc_cache_evars: Evd.evar_map;
       tc_cache_info: autoinfo;
       tc_cache_global_hints: hint_db list }
 
   let tc_cache_entry_cmp a b =
-    let eq_constr_cmp sigma1 sigma2 c1 c2 def =
-      assert(def!=0);
-      try if Evarutil.eq_constr_univs_test sigma1 sigma2 c1 c2 then 0 else def
-      with _ -> def in
-    let sigma1 = a.tc_cache_goal_sigma in
-    let sigma2 = b.tc_cache_goal_sigma in
-    let c1 = EConstr.to_constr a.tc_cache_evars a.tc_cache_goal_concl in
-    let c2 = EConstr.to_constr b.tc_cache_evars b.tc_cache_goal_concl in
     let (>>==) f c = if f != 0 then f else Lazy.force c in
-    let lit =
-      let open Pervasives in
-      compare a.tc_cache_goal_env b.tc_cache_goal_env >>==
-        lazy (compare a.tc_cache_goal_sigma b.tc_cache_goal_sigma) >>==
-        lazy (compare a.tc_cache_goal_concl b.tc_cache_goal_concl) >>==
-        lazy (compare a.tc_cache_evars b.tc_cache_evars)
+    let lit = let open Pervasives in
+                compare a.tc_cache_goal_sigma b.tc_cache_goal_sigma >>==
+                lazy (compare a.tc_cache_goal_concl b.tc_cache_goal_concl)
     in
-    if lit=0 then lit else eq_constr_cmp sigma1 sigma2 c1 c2 lit
+    if lit=0 then lit else
+      (let eq_constr_cmp sigma1 sigma2 c1 c2 def =
+         assert(def!=0);
+          try if Evarutil.eq_constr_univs_test sigma1 sigma2 c1 c2 then 0 else def
+          with _ -> def in
+        let sigma1 = a.tc_cache_goal_sigma in
+        let sigma2 = b.tc_cache_goal_sigma in
+        let c1 = EConstr.to_constr a.tc_cache_goal_sigma a.tc_cache_goal_concl in
+        let c2 = EConstr.to_constr b.tc_cache_goal_sigma b.tc_cache_goal_concl in
+       eq_constr_cmp sigma1 sigma2 c1 c2 lit)
                            >>== lazy (compare_autoinfo a.tc_cache_info b.tc_cache_info)
                            >>== lazy (
                                     List.compare Hint_db.compare
@@ -1133,10 +1129,8 @@ module Search = struct
          TypeclassCache.exists
            (fun x -> tc_cache_entry_cmp
                        {
-                         tc_cache_goal_env   = env   ;
                          tc_cache_goal_sigma = sigma ;
                          tc_cache_goal_concl = concl ;
-                         tc_cache_evars      = sigma ;
                          tc_cache_info       = info ;
                          tc_cache_global_hints = hints
                        } x = 0) !typeclass_cache
@@ -1316,10 +1310,8 @@ module Search = struct
                         typeclass_cache :=
                           TypeclassCache.add
                             {
-                              tc_cache_goal_env     = Goal.env gl    ;
                               tc_cache_goal_sigma  = Goal.sigma gl ;
                               tc_cache_goal_concl   = Goal.concl gl  ;
-                              tc_cache_evars           = sigma'            ;
                               tc_cache_info              = info                ;
                               tc_cache_global_hints = hints ;
                             } !typeclass_cache ;
