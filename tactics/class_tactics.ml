@@ -36,7 +36,7 @@ module NamedDecl = Context.Named.Declaration
 
 (** Options handling *)
 
-let typeclasses_debug = ref 0
+let typeclasses_debug = ref 1
 let typeclasses_depth = ref None
 
 let typeclasses_modulo_eta = ref false
@@ -1011,25 +1011,21 @@ module Search = struct
 
   let tc_cache_entry_cmp a b =
     let (>>==) f c = if f != 0 then f else Lazy.force c in
-    let lit = let open Pervasives in
-                compare a.tc_cache_goal_sigma b.tc_cache_goal_sigma >>==
-                lazy (compare a.tc_cache_goal_concl b.tc_cache_goal_concl)
-    in
-    if lit=0 then lit else
-      (let eq_constr_cmp sigma1 sigma2 c1 c2 def =
-         assert(def!=0);
-          try if Evarutil.eq_constr_univs_test sigma1 sigma2 c1 c2 then 0 else def
-          with _ -> def in
-        let sigma1 = a.tc_cache_goal_sigma in
-        let sigma2 = b.tc_cache_goal_sigma in
-        let c1 = EConstr.to_constr a.tc_cache_goal_sigma a.tc_cache_goal_concl in
-        let c2 = EConstr.to_constr b.tc_cache_goal_sigma b.tc_cache_goal_concl in
-       eq_constr_cmp sigma1 sigma2 c1 c2 lit)
-                           >>== lazy (compare_autoinfo a.tc_cache_info b.tc_cache_info)
-                           >>== lazy (
-                                    List.compare Hint_db.compare
-                                      a.tc_cache_global_hints b.tc_cache_global_hints
-                                  )
+    (* We define our own version of `CErrror.noncritical` to
+          exclude errors like: Anomaly "Universe Coq.Classes.CMorphisms.397 undefined." *)
+    let noncritical x = if CErrors.is_anomaly x then true else CErrors.noncritical x in
+    let def = Int.compare (Obj.magic (Obj.repr a)) (Obj.magic (Obj.repr b)) in
+    if def=0 then 0 else
+      (try if Evarutil.eq_constr_univs_evars_test
+                a.tc_cache_goal_sigma
+                b.tc_cache_goal_sigma
+                (EConstr.to_constr a.tc_cache_goal_sigma a.tc_cache_goal_concl)
+                (EConstr.to_constr b.tc_cache_goal_sigma b.tc_cache_goal_concl)
+           then 0 else def
+       with ex when noncritical ex -> def)
+      >>== lazy (compare_autoinfo a.tc_cache_info b.tc_cache_info)
+      >>== lazy (List.compare Hint_db.compare
+                   a.tc_cache_global_hints b.tc_cache_global_hints)
 
   module TypeclassCache = Set.Make(struct
                               type t = tc_cache_entry
