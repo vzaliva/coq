@@ -1004,7 +1004,7 @@ module Search = struct
     {
       (* the following 2 fields are unpacked Goal.t *)
       tc_cache_goal_sigma : Evd.evar_map;
-      tc_cache_goal_concl : EConstr.constr ;
+      tc_cache_goal_concl : Constr.constr ;
 
       tc_cache_info: autoinfo;
       tc_cache_global_hints: hint_db list }
@@ -1019,8 +1019,8 @@ module Search = struct
       (try if Evarutil.eq_constr_univs_evars_test
                 a.tc_cache_goal_sigma
                 b.tc_cache_goal_sigma
-                (EConstr.to_constr a.tc_cache_goal_sigma a.tc_cache_goal_concl)
-                (EConstr.to_constr b.tc_cache_goal_sigma b.tc_cache_goal_concl)
+                a.tc_cache_goal_concl
+                b.tc_cache_goal_concl
            then 0 else def
        with ex when noncritical ex -> def)
       >>== lazy (compare_autoinfo a.tc_cache_info b.tc_cache_info)
@@ -1125,9 +1125,9 @@ module Search = struct
          TypeclassCache.exists
            (fun x -> tc_cache_entry_cmp
                        {
-                         tc_cache_goal_sigma = sigma ;
-                         tc_cache_goal_concl = concl ;
-                         tc_cache_info       = info ;
+                         tc_cache_goal_sigma  = sigma ;
+                         tc_cache_goal_concl   = EConstr.to_constr sigma  concl  ;
+                         tc_cache_info              = info ;
                          tc_cache_global_hints = hints
                        } x = 0) !typeclass_cache
     then
@@ -1303,20 +1303,22 @@ module Search = struct
                 tclLIFT (
                     NonLogical.make (fun () ->
                         let oldsize = TypeclassCache.cardinal !typeclass_cache in
+                        let concl = Goal.concl gl in
+                        let sigma = Goal.sigma gl in
                         typeclass_cache :=
                           TypeclassCache.add
                             {
-                              tc_cache_goal_sigma  = Goal.sigma gl ;
-                              tc_cache_goal_concl   = Goal.concl gl  ;
-                              tc_cache_info              = info                ;
-                              tc_cache_global_hints = hints ;
+                              tc_cache_goal_sigma  = sigma;
+                              tc_cache_goal_concl   = EConstr.to_constr sigma concl;
+                              tc_cache_info              = info;
+                              tc_cache_global_hints = hints;
                             } !typeclass_cache ;
                         let newsize = TypeclassCache.cardinal !typeclass_cache in
                         if newsize != oldsize && !typeclasses_debug > 0 then
                           Feedback.msg_debug
                             (pr_depth info.search_depth ++
                                str": Caching " ++
-                               Printer.pr_econstr_env (Goal.env gl) (Goal.sigma gl) (Goal.concl gl) ++
+                               Printer.pr_econstr_env (Goal.env gl) sigma concl ++
                                str". Cache size " ++
                                int (newsize))
                   )) >>= fun () -> tclZERO ~info:ei e)
