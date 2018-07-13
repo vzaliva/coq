@@ -9,7 +9,17 @@
 (* Coq_makefile: automatically create a Makefile for a Coq development *)
 
 open CoqProject_file
+open Pp
 open Printf
+
+(* A feeders is needed by CoqProject_file functions *)
+let coqmkfile_feed (fb : Feedback.feedback) =
+  let open Feedback in
+  match fb.contents with
+  (* print all messages, warning or errors *)
+  | Message (lvl,loc,msg) ->
+     Pp.pp_with Format.std_formatter (msg ++ Pp.fnl ()) 
+  | _ -> ()
 
 let output_channel = ref stdout
 let makefile_name = ref "Makefile"
@@ -113,7 +123,7 @@ let read_whole_file s =
     close_in ic;
     Buffer.contents b
 
-let quote s = if String.contains s ' ' then "'" ^ s ^ "'" else s
+let quote s = if String.contains s ' ' || CString.is_empty s then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file args project =
   let makefile_template =
@@ -364,6 +374,7 @@ let destination_of { ml_includes; q_includes; r_includes; } file =
   | [s] -> Printf.printf "%s" (quote s)
   | _ -> assert false
 
+
 let share_prefix s1 s2 =
   let s1 = CString.split '.' s1 in
   let s2 = CString.split '.' s2 in
@@ -372,6 +383,8 @@ let share_prefix s1 s2 =
   | _ -> false
 
 let _ =
+  (* Registering the feeder for CoqProject_file functions. *)
+  let _ = Feedback.add_feeder coqmkfile_feed in
   let prog, args =
     if Array.length Sys.argv = 1 then usage ();
     let args = Array.to_list Sys.argv in

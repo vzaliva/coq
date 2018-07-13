@@ -11,8 +11,8 @@
 #load "str.cma"
 open Printf
 
-let coq_version = "8.7.1"
-let coq_macos_version = "8.7.1" (** "[...] should be a string comprised of
+let coq_version = "8.7.2"
+let coq_macos_version = "8.7.2" (** "[...] should be a string comprised of
 three non-negative, period-separated integers [...]" *)
 let vo_magic = 8700
 let state_magic = 58700
@@ -785,24 +785,22 @@ let get_lablgtkdir () =
 
 let check_lablgtk_version src dir = match src with
 | Manual | Stdlib ->
-  let test accu f =
-    if accu then
-      let test = sprintf "grep -q -w %s %S/glib.mli" f dir in
-      Sys.command test = 0
-    else false
-  in
-  let heuristics = [
-    "convert_with_fallback";
-    "wrap_poll_func"; (** Introduced in lablgtk 2.16 *)
-  ] in
-  let ans = List.fold_left test true heuristics in
-  if ans then printf "Warning: could not check the version of lablgtk2.\n";
-  (ans, "an unknown version")
+  printf "Warning: could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.\n";
+  (true, "an unknown version")
 | OCamlFind ->
   let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk2"] in
   try
     let vi = List.map s2i (numeric_prefix_list v) in
-    ([2; 16] <= vi, v)
+    if vi < [2; 16; 0] then
+      (false, v)
+    else if vi < [2; 18; 3] then
+      begin
+        (* Version 2.18.3 is known to report incorrectly as 2.18.0, and Launchpad packages report as version 2.16.0 due to a misconfigured META file; see https://bugs.launchpad.net/ubuntu/+source/lablgtk2/+bug/1577236 *)
+        printf "Warning: Your installed lablgtk reports as %s.\n It is possible that the installed version is actually more recent\n but reports an incorrect version. If the installed version is\n actually more recent than 2.18.3, that's fine; if it is not,\n CoqIDE will compile but may be very unstable.\n" v;
+        (true, "an unknown version")
+      end
+    else
+      (true, v)
   with _ -> (false, v)
 
 let pr_ide = function No -> "no" | Byte -> "only bytecode" | Opt -> "native"
@@ -829,7 +827,7 @@ let check_coqide () =
   if dir = "" then set_ide No "LablGtk2 not found";
   let (ok, version) = check_lablgtk_version via dir in
   let found = sprintf "LablGtk2 found (%s, %s)" (get_source via) version in
-  if not ok then set_ide No (found^", but too old (required >= 2.16, found " ^ version ^ ")");
+  if not ok then set_ide No (found^", but too old (required >= 2.18.3, found " ^ version ^ ")");
   (* We're now sure to produce at least one kind of coqide *)
   lablgtkdir := shorten_camllib dir;
   if !Prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
@@ -892,13 +890,6 @@ let strip =
     if strip = "" then "strip" else strip
     end
 
-(** * md5sum command *)
-
-let md5sum =
-  select_command "Don’t know how to compute MD5 checksums…" [
-    "md5sum", [], [ "--version" ];
-    "md5", ["-q"], [ "-s" ; "''" ];
-  ]
 
 (** * Documentation : do we have latex, hevea, ... *)
 
@@ -1082,7 +1073,7 @@ let _ = print_summary ()
 
 let write_dbg_wrapper f =
   safe_remove f;
-  let o = open_out f in
+  let o = open_out_bin f in  (* _bin to avoid adding \r on Cygwin/Windows *)
   let pr s = fprintf o s in
   pr "#!/bin/sh\n\n";
   pr "###### ocamldebug-coq : a wrapper around ocamldebug for Coq ######\n\n";
@@ -1267,8 +1258,6 @@ let write_makefile f =
   pr "# Unix systems and profiling: true\n";
   pr "# Unix systems and no profiling: strip\n";
   pr "STRIP=%s\n\n" strip;
-  pr "#the command md5sum\n";
-  pr "MD5SUM=%s\n\n" md5sum;
   pr "# LablGTK\n";
   pr "COQIDEINCLUDES=%s\n\n" !lablgtkincludes;
   pr "# CoqIde (no/byte/opt)\n";

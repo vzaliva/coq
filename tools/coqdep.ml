@@ -455,7 +455,7 @@ let usage () =
   eprintf "  -coqlib dir : set the coq standard library directory\n";
   eprintf "  -suffix s : \n";
   eprintf "  -slash : deprecated, no effect\n";
-  eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed";
+  eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
   exit 1
 
 let split_period = Str.split (Str.regexp (Str.quote "."))
@@ -539,4 +539,4 @@ let _ =
     coqdep ()
   with CErrors.UserError(s,p) ->
     let pp = (match s with | None -> p | Some s -> Pp.(str s ++ str ": " ++ p))  in
-    Feedback.msg_error pp
+    Format.eprintf "%a@\n%!" Pp.pp_with pp
