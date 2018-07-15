@@ -93,7 +93,10 @@ let set_typeclasses_caching d = (:=) typeclasses_caching d
 let get_typeclasses_caching () = !typeclasses_caching
 
 (** [typeclasses_caching_min_subgoals] controls how much subgoals had to be checked before failed goal be cached. It is performance optimzation to avoid caching 'easy' goals, where overhad of the cache overcomes it's potential benefits. *)
-let typeclasses_caching_min_subgoals = 5
+let typeclasses_caching_min_subgoals = ref 5
+let set_typeclasses_caching_min_subgoals n =
+  (:=) typeclasses_caching_min_subgoals (match n with | Some n -> n | None -> 0)
+let get_typeclasses_caching_min_subgoals () = Some (!typeclasses_caching_min_subgoals)
 
 open Goptions
 
@@ -185,6 +188,14 @@ let _ =
       optkey   = ["Typeclasses";"Caching"];
       optread  = get_typeclasses_caching;
       optwrite = set_typeclasses_caching; }
+
+let _ =
+  declare_int_option
+    { optdepr  = false;
+      optname  = "typeclass caching min subgoals";
+      optkey   = ["Typeclasses";"Caching";"Mingoals"];
+      optread  = get_typeclasses_caching_min_subgoals;
+      optwrite = set_typeclasses_caching_min_subgoals; }
 
 type search_strategy = Dfs | Bfs
 
@@ -1306,7 +1317,7 @@ module Search = struct
             | Fail (e,ei) ->
                begin
                  match Exninfo.get ei possinfo with
-                 | Some poss when poss>typeclasses_caching_min_subgoals ->
+                 | Some poss when poss > !typeclasses_caching_min_subgoals ->
                     tclEVARMAP >>=
                       (fun sigma' ->
                         tclLIFT (
