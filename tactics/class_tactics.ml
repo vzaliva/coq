@@ -92,6 +92,9 @@ let typeclasses_caching = ref true
 let set_typeclasses_caching d = (:=) typeclasses_caching d
 let get_typeclasses_caching () = !typeclasses_caching
 
+(** [typeclasses_caching_min_subgoals] controls how much subgoals had to be checked before failed goal be cached. It is performance optimzation to avoid caching 'easy' goals, where overhad of the cache overcomes it's potential benefits. *)
+let typeclasses_caching_min_subgoals = 5
+
 open Goptions
 
 let _ =
@@ -1279,18 +1282,20 @@ module Search = struct
 	            if CErrors.noncritical (fst e') then
                   (pr_error e'; aux (merge_exceptions e e') tl)
                 else iraise e')
+        and possinfo : int Exninfo.t = Exninfo.make ()
         and aux e = function
           | x :: xs -> onetac e x xs
           | [] ->
+             let nposs = List.length poss in
              if !foundone == false && !typeclasses_debug > 0 then
                Feedback.msg_debug
                  (pr_depth info.search_depth ++ str": no match for " ++
                     Printer.pr_econstr_env (Goal.env gl) sigma concl ++
-                    str ", " ++ int (List.length poss) ++
+                    str ", " ++ int (nposs) ++
                     str" possibilities");
              match e with
              | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
-             | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableEx
+             | (_,ie) -> Proofview.tclZERO ~info:(Exninfo.add ie possinfo nposs) NoApplicableEx
         in
         let x =
           if backtrack then aux (NoApplicableEx,Exninfo.null) poss
@@ -1299,29 +1304,35 @@ module Search = struct
           tclCASE x >>=
             function
             | Fail (e,ei) ->
-               tclEVARMAP >>= (fun sigma' ->
-                tclLIFT (
-                    NonLogical.make (fun () ->
-                        let oldsize = TypeclassCache.cardinal !typeclass_cache in
-                        let concl = Goal.concl gl in
-                        let sigma = Goal.sigma gl in
-                        typeclass_cache :=
-                          TypeclassCache.add
-                            {
-                              tc_cache_goal_sigma  = sigma;
-                              tc_cache_goal_concl   = EConstr.to_constr sigma concl;
-                              tc_cache_info              = info;
-                              tc_cache_global_hints = hints;
-                            } !typeclass_cache ;
-                        let newsize = TypeclassCache.cardinal !typeclass_cache in
-                        if newsize != oldsize && !typeclasses_debug > 0 then
-                          Feedback.msg_debug
-                            (pr_depth info.search_depth ++
-                               str": Caching " ++
-                               Printer.pr_econstr_env (Goal.env gl) sigma concl ++
-                               str". Cache size " ++
-                               int (newsize))
-                  )) >>= fun () -> tclZERO ~info:ei e)
+               begin
+                 match Exninfo.get ei possinfo with
+                 | Some poss when poss>typeclasses_caching_min_subgoals ->
+                    tclEVARMAP >>=
+                      (fun sigma' ->
+                        tclLIFT (
+                            NonLogical.make (fun () ->
+                                let oldsize = TypeclassCache.cardinal !typeclass_cache in
+                                let concl = Goal.concl gl in
+                                let sigma = Goal.sigma gl in
+                                typeclass_cache :=
+                                  TypeclassCache.add
+                                    {
+                                      tc_cache_goal_sigma  = sigma;
+                                      tc_cache_goal_concl   = EConstr.to_constr sigma concl;
+                                      tc_cache_info              = info;
+                                      tc_cache_global_hints = hints;
+                                    } !typeclass_cache ;
+                                let newsize = TypeclassCache.cardinal !typeclass_cache in
+                                if newsize != oldsize && !typeclasses_debug > 0 then
+                                  Feedback.msg_debug
+                                    (pr_depth info.search_depth ++
+                                       str": Caching " ++
+                                       Printer.pr_econstr_env (Goal.env gl) sigma concl ++
+                                       str". Cache size " ++
+                                       int (newsize))
+                          )) >>= fun () -> tclZERO ~info:ei e)
+                 | _ ->tclZERO ~info:ei e
+               end
             | Next (r,c) -> ortac (Proofview.tclUNIT r) c
         else x
       end
