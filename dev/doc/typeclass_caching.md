@@ -36,6 +36,7 @@ slightly decreased cache size and marginally improved performance.
 
 ## Benchmarks: ##
 
+```
  | Experiment     | Time | Hits  | Max cache size |
  | -------------- | ---- | -- -- | -------------- |
  | Baseline       | 3:40 |     0 |              0 |
@@ -44,6 +45,7 @@ slightly decreased cache size and marginally improved performance.
  | min_goals=3    | 4:46 |       |              ? |
  | min_goals=4    | 4:37 | 4.09% |            875 |
  | min_goals=10   | 4:47 | 1.62% |            211 |
+```
 
 # Documentation #
 
