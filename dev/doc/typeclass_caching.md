@@ -21,7 +21,7 @@ to use a hash set.
 We need to strike a ballance between the cost of cache lookups and
 number of cache hits. Both addition and lookup of the new goals to
 cache are heavy operation (`O(n)`). Our initial naive implementation
-("Strict match") gave us 2.49% hit rate with max cache size ~2400
+("Strict match") gave us 2.49% hit rate with max cache size ~24000
 entries.
 
 Implementing more intelligent match up to unresolved evars ("Evar
